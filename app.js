@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import session from "express-session";
+import webScarpeRoutes from "./webScrape/routes.js";
 
 const app = express();
 
@@ -23,5 +24,5 @@ if (process.env.NODE_ENV !== "development") {
     };
 }
 app.use(session(sessionOptions));
-app.use(express.json());
+webScarpeRoutes(app)
 app.listen(process.env.PORT || 4000);
