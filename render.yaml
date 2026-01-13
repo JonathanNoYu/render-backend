@@ -6,8 +6,3 @@ services:
   runtime: node
   buildCommand: npm install
   startCommand: npm run start
-  envVars:
-    - key: FRONTEND_URL
-      value: https://jonathannoyu.github.io/
-    - key: NODE_ENV
-      value: production
