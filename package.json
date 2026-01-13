@@ -1,0 +1,12 @@
+{
+  "name": "render-backend",
+  "version": "1.0.0",
+  "description": "backend for my front-end hosted on render",
+  "license": "ISC",
+  "author": "Jonathan Yu",
+  "type": "module",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
