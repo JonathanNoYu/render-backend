@@ -1,0 +1,6 @@
+previews:
+  generation: automatic
+services:
+- type: web
+  name: express-server
+      runtime: node
