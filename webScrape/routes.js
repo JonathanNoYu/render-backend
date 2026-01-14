@@ -6,6 +6,7 @@ function webScarpeRoutes(app) {
     const webScrapeByTubmlrUser = async (req, res) => {
         const username = req.params.tumblrUsername
         var postData, browser, page;
+        console.log(`WebScraping for user: ${username}`)
         if (liveBrowsers[username]) {
             var {postData, browser, page} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`, 4, browser, page)
         } else {
