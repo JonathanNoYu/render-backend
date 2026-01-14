@@ -40,14 +40,10 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, browser, page) {
     }
     var scrollcount = 0;
     while(scrollcount < scrollMax) {
-        await page.keyboard.press('End')
-        await page.waitForTimeout(175)
-        await page.keyboard.press('End')
-        await page.waitForTimeout(175)
-        await page.keyboard.press('End')
-        await page.waitForTimeout(175)
-        await page.keyboard.press('End')
-        await page.waitForTimeout(175)
+        await scrollABit(page)
+        await scrollABit(page)
+        await scrollABit(page)
+        await scrollABit(page)
         html = await page.content()
         await page.waitForTimeout(175)
         var data = processTrumblrPage(html)
@@ -62,6 +58,15 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, browser, page) {
     //fs.writeFile('postDataAfter2.txt', JSON.stringify(postData), err => {if (err) console.error(err)})
     console.log("postData length after consolidating:" + postData.length)
     return {postData, browser, page}
+}
+
+async function scrollABit(page) {
+    if (process.env.NODE_ENV || process.env.NODE_ENV === "production") {
+        await page.keyboard.press('End')
+    } else {
+        await page.keyboard.press('End')
+        await page.waitForTimeout(175)
+    }
 }
 
 function consolidateOrRemove(arrOfObj) {

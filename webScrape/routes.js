@@ -18,5 +18,11 @@ function webScarpeRoutes(app) {
         res.json(postData);
     };
 
+    setInterval(() => {
+        for (const key of Object.keys(liveBrowsers)) {
+            delete liveBrowsers[key]
+        }
+    }, 600000) // 10 mins timer to clear the obj
+
     app.get("/api/webScrape/tumblr/:tumblrUsername", webScrapeByTubmlrUser);
 } export default webScarpeRoutes
