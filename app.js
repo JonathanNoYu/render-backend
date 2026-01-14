@@ -6,15 +6,21 @@ import webScarpeRoutes from "./webScrape/routes.js";
 
 const app = express();
 
-console.log(process.env.FRONTEND_URL)
+const allowedOrigins = process.env.FRONTEND_URL
+console.log(allowedOrigins)
 app.use(
     cors({
         credentials: true,
         origin: (origin, callback) => {
-            if(process.env.FRONTEND_URL.includes(origin)) {
-                callback(null, origin)
+            if (!origin) return callback(null, true);
+
+            if (allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
             }
-        }
+        },
+        methods: ["GET"]
     })
 );
 // const sessionOptions = {
