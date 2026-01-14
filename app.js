@@ -7,11 +7,12 @@ import webScarpeRoutes from "./webScrape/routes.js";
 const app = express();
 
 const allowedOrigins = process.env.FRONTEND_URL
-console.log(allowedOrigins)
+const webSite = allowedOrigins.substring(2, 32)
+console.log(webSite)
 app.use(
     cors({
         credentials: true,
-        origin: allowedOrigins[0],
+        origin: webSite,
         methods: ["GET"]
     })
 );
