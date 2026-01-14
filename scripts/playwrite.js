@@ -11,25 +11,27 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, browser, page) {
         viewport: { width: 1366, height: 768 }
     })
     }
-    if (page === undefined) page = await context.newPage();
-    await page.addStyleTag({ content: `html { scroll-behavior: initial !important; } 
+    if (page === undefined) {
+        page = await context.newPage();
+        await page.addStyleTag({ content: `html { scroll-behavior: initial !important; } 
                                         *,
                                         *::before,
                                         *::after {
                                         transition: none !important;
                                         animation: none !important;
                                         }`});
-    // Intercept all requests
-    await page.route('**/*', (route) => {
-        const type = route.request().resourceType();
-        // Block heavy, non-essential assets
-        if (type === 'image' || type === 'font' || type === 'media') {
-            return route.abort();
-        }
-        // Allow everything else (HTML, JS, XHR, fetch, etc.)
-        return route.continue();
-        });
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
+        // Intercept all requests
+        await page.route('**/*', (route) => {
+            const type = route.request().resourceType();
+            // Block heavy, non-essential assets
+            if (type === 'image' || type === 'font' || type === 'media') {
+                return route.abort();
+            }
+            // Allow everything else (HTML, JS, XHR, fetch, etc.)
+            return route.continue();
+            });
+        await page.goto(url, { waitUntil: 'domcontentloaded' });
+    }
     // await page.waitForSelector('.FtjPK');
     var html = await page.content()
     var postData = prevData

@@ -15,7 +15,6 @@ function webScarpeRoutes(app) {
             var {postData, browser, page} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`)
         }
         liveBrowsers[username] = [browser, page, postData]
-        await browser.close()
         res.json(postData);
     };
 
