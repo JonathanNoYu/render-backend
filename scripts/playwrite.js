@@ -2,12 +2,15 @@ import { BASE_URL_TUMBLR } from "../constants.js";
 import { chromium } from "playwright";
 import * as cheerio from 'cheerio';
 
-async function webScrapePlaywright(url, scrollMax=4, browser, page) {
-    if (browser === undefined) browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({
+async function webScrapePlaywright(url, scrollMax=4, prevData, browser, page) {
+    var context;
+    if (browser === undefined) {
+        browser = await chromium.launch({ headless: true });
+        context = await browser.newContext({
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
         viewport: { width: 1366, height: 768 }
     })
+    }
     if (page === undefined) page = await context.newPage();
     await page.addStyleTag({ content: `html { scroll-behavior: initial !important; } 
                                         *,
@@ -29,7 +32,10 @@ async function webScrapePlaywright(url, scrollMax=4, browser, page) {
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     // await page.waitForSelector('.FtjPK');
     var html = await page.content()
-    var postData = processTrumblrPage(html)
+    var postData = prevData
+    if (prevData === undefined) {
+        var postData = processTrumblrPage(html)
+    }
     var scrollcount = 0;
     while(scrollcount < scrollMax) {
         await page.keyboard.press('End')
