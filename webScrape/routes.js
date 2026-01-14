@@ -8,12 +8,16 @@ function webScarpeRoutes(app) {
         var postData, browser, page;
         console.log(`WebScraping for user: ${username}`)
         if (liveBrowsers[username]) {
-            var {postData, browser, page} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`, 4, browser, page)
+            const prevBrowser = liveBrowsers[username][0]
+            const prevPage = liveBrowsers[username][1]
+            postData = liveBrowsers[username][2]
+            var {postData2, browser, page} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`, 4, browser, page)
+            postData = [...postData, ...postData2]
         } else {
             var {postData, browser, page} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`)
         }
         
-        liveBrowsers[username] = browser
+        liveBrowsers[username] = [browser, page, postData]
         await browser.close()
         res.json(postData);
     };
