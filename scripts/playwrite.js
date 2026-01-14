@@ -75,7 +75,7 @@ function consolidateOrRemove(arrOfObj) {
                 if(!resObj["dates"].includes(obj["dates"][1])) {
                     resObj["links"] = [...resObj["links"], ...obj["links"].slice(1)]
                     resObj["dates"] = [...resObj["dates"], ...obj["dates"].slice(1)]
-                    resObj["body"] = [...resObj["body"], ...obj["body"]]
+                    resObj["bodys"] = [...resObj["bodys"], ...obj["bodys"]]
                     resObj["users"] = [...resObj["users"], ...obj["users"]]
                 }
                 notInArr = false;
