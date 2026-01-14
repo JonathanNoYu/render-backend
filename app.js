@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import session from "express-session";
+import "dotenv/config";
 import webScarpeRoutes from "./webScrape/routes.js";
 
 const app = express();
@@ -21,6 +22,9 @@ if (process.env.NODE_ENV !== "development") {
     sessionOptions.cookie = {
         sameSite: "none",
         secure: true,
+        store: new MemoryStore({
+            checkPeriod: 86400000 // prune expired entries every 24h
+        }),
     };
 }
 app.use(session(sessionOptions));
