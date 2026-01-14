@@ -138,7 +138,7 @@ function processTrumblrPage(html) {
                 if (author === "" && users.length > 0) author = users.shift()
                 if (postLinks && postLinks.length > 0) id = postLinks[0].replace(/\D/g, "")
                 allPosts.push({id:id, title:titleInfo[0], subtitle: titleInfo[1], author:author, 
-                                dates:postDates, links:postLinks, users:users, body:postBody})
+                                dates:postDates, links:postLinks, users:users, bodys:postBody})
             })
         }
     })
