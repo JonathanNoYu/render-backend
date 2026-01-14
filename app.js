@@ -6,10 +6,15 @@ import webScarpeRoutes from "./webScrape/routes.js";
 
 const app = express();
 
+console.log(process.env.FRONTEND_URL)
 app.use(
     cors({
         credentials: true,
-        origin: process.env.FRONTEND_URL
+        origin: (origin, callback) => {
+            if(process.env.FRONTEND_URL.includes(origin)) {
+                callback(null, origin)
+            }
+        }
     })
 );
 // const sessionOptions = {
