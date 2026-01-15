@@ -5,6 +5,10 @@ function webScarpeRoutes(app) {
     const liveBrowsers = {}
     const webScrapeByTubmlrUser = async (req, res) => {
         const username = req.params.tumblrUsername
+        console.log(`Request from: 
+    User-agent: ${req.get("User-Agent")}
+    Origin:     ${req.get("Origin")}
+    Referer:    ${req.get("Referer")}`)
         var postData, browser, page;
         console.log(`WebScraping for user: ${username}`)
         if (liveBrowsers[username]) {

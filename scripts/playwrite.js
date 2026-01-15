@@ -61,7 +61,7 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, browser, page) {
 }
 
 async function scrollABit(page) {
-    if (process.env.NODE_ENV || process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV && process.env.NODE_ENV === "production") {
         await page.keyboard.press('End')
     } else {
         await page.keyboard.press('End')
