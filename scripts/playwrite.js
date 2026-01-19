@@ -2,17 +2,17 @@ import { BASE_URL_TUMBLR } from "../constants.js";
 import { chromium } from "playwright";
 import * as cheerio from 'cheerio';
 
-async function webScrapePlaywright(url, scrollMax=4, prevData, browser, page) {
-    var context;
-    if (browser === undefined) {
-        browser = await chromium.launch({ headless: true });
-        context = await browser.newContext({
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        viewport: { width: 1366, height: 768 }
-    })
-    }
+async function webScrapePlaywright(url, scrollMax=4, prevData, page) {
     if (page === undefined) {
+        const browser = await chromium.launch({ headless: true });
+        const context = await browser.newContext({
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            viewport: { width: 1366, height: 768 }
+        })
         page = await context.newPage();
+        page.on('close', data => {
+            browser.close()
+        });
         await page.addStyleTag({ content: `html { scroll-behavior: initial !important; } 
                                         *,
                                         *::before,
@@ -30,9 +30,9 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, browser, page) {
             // Allow everything else (HTML, JS, XHR, fetch, etc.)
             return route.continue();
             });
+        console.log("Going to website " + url)
         await page.goto(url, { waitUntil: 'domcontentloaded' });
     }
-    // await page.waitForSelector('.FtjPK');
     var html = await page.content()
     var postData = prevData
     if (prevData === undefined) {
@@ -45,19 +45,18 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, browser, page) {
         await scrollABit(page)
         await scrollABit(page)
         html = await page.content()
-        await page.waitForTimeout(175)
         var data = processTrumblrPage(html)
         postData = [...postData, ...data]
         scrollcount++
         console.log(`Scrolling on ${url} scollcount:${scrollcount}`)
     }
     // const fs = require('node:fs');
-    //fs.writeFile('postDataBefore2.txt', JSON.stringify(postData), err => {if (err) console.error(err)})
+    // fs.writeFile('postDataBefore2.txt', JSON.stringify(postData), err => {if (err) console.error(err)})
     console.log("postData length before consolidating:" + postData.length)
     postData = consolidateOrRemove(postData)
-    //fs.writeFile('postDataAfter2.txt', JSON.stringify(postData), err => {if (err) console.error(err)})
+    // fs.writeFile('postDataAfter2.txt', JSON.stringify(postData), err => {if (err) console.error(err)})
     console.log("postData length after consolidating:" + postData.length)
-    return {postData, browser, page}
+    return {postData, page}
 }
 
 async function scrollABit(page) {
@@ -82,6 +81,12 @@ function consolidateOrRemove(arrOfObj) {
                     resObj["dates"] = [...resObj["dates"], ...obj["dates"].slice(1)]
                     resObj["bodys"] = [...resObj["bodys"], ...obj["bodys"]]
                     resObj["users"] = [...resObj["users"], ...obj["users"]]
+
+                    const objWC = obj["wordcount"]
+                    const resWC = resObj["wordcount"]
+                    for (const user of Object.keys(objWC)) {
+                        resWC[user] = resWC[user] + objWC[user] | objWC[user]
+                    }
                 }
                 notInArr = false;
             }
@@ -93,22 +98,36 @@ function consolidateOrRemove(arrOfObj) {
     return resArr
 }
 
+// Adding this so backend show the wordcount but only if ran not in prod.
+// So the free tier render does not use more ram than it needs to.
+function addWordCount(postData) {
+    postData = postData.map((post, _i) => {
+        const postBody = post["bodys"]
+        const users = post["users"] 
+        const newUsers = post["wordcount"]
+        if (postBody.length < users.length) return post;
+        users.map((u, _i) =>{
+            newUsers[u] = newUsers[u] + postBody[_i].length | postBody[_i].length
+        })
+        return post
+    })
+    return postData
+}
+
 function processTrumblrPage(html) {
     const $ = cheerio.load(html);
-    const dates = []
-    const allPosts = []
+    var allPosts = []
     const allPostsOnPage = $('article.FtjPK'); // article.FtjPK r0etU
     // Check p.F2bKK to check if a post is pinned. If it is ignore it.
     const pinned = allPostsOnPage.find(".F2bKK").length
     allPostsOnPage.each((_i, el) => {
         if (_i > pinned) { 
             const post = $(el).find(".Qb2zX") // all users + posts
-            const lastActivityOnPost = $(el).find('.l4Qpd').attr('aria-label') // Usually Reblog
             // const tags = $(el).find("div.mwjNz") // tags
             post.each((__i, el) => {
                 var author = "";
                 var id;
-                const users = []
+                var users = []
                 const postBody = []
                 const postDates = []
                 const postLinks = []
@@ -142,11 +161,14 @@ function processTrumblrPage(html) {
                 })
                 if (author === "" && users.length > 0) author = users.shift()
                 if (postLinks && postLinks.length > 0) id = postLinks[0].replace(/\D/g, "")
-                allPosts.push({id:id, title:titleInfo[0], subtitle: titleInfo[1], author:author, 
+                allPosts.push({id:id, title:titleInfo[0], wordcount:{}, subtitle: titleInfo[1], author:author, 
                                 dates:postDates, links:postLinks, users:users, bodys:postBody})
             })
         }
     })
+    if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'production') {
+        allPosts = addWordCount(allPosts)
+    }
     return allPosts
 }
 export default webScrapePlaywright
