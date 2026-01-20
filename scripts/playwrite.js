@@ -107,7 +107,8 @@ function addWordCount(postData) {
         const newUsers = post["wordcount"]
         if (postBody.length < users.length) return post;
         users.map((u, _i) =>{
-            newUsers[u] = newUsers[u] + postBody[_i].length | postBody[_i].length
+            let bodyCount = postBody[_i].split(" ").length
+            newUsers[u] = newUsers[u] + bodyCount | bodyCount
         })
         return post
     })
