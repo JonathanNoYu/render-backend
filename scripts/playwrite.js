@@ -42,9 +42,8 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page, pageMaxH=0)
 
     var scrollcount = 0;
     while(scrollcount < scrollMax) {
+        var initWinHeight = 0;
         await scrollABit(page)
-        var initWinHeight = await page.evaluate(() => document.getElementById("tumblr").offsetHeight);
-        console.log(`init height:  ${initWinHeight}`)
         await scrollABit(page)
         initWinHeight = await reloadAtBottom(page, initWinHeight)
         await scrollABit(page)
@@ -72,14 +71,14 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page, pageMaxH=0)
 }
 
 async function reloadAtBottom(page, initWinH) {
-    let newWinH = await page.evaluate(() => document.getElementById("tumblr").offsetHeight);
+    let newWinH = await page.evaluate(() => document.getElementById("root").offsetHeight);
     await page.waitForTimeout(PAGE_KEYPRESS_TIMEOUT)
     console.log(`init  scroll height: ${initWinH}`)
     console.log(`after scroll height: ${newWinH}`)
     if (initWinH >= newWinH) {
         console.log(`reload page`)
         await page.reload()
-        await page.waitForTimeout(PAGE_CONTENT_TIMEOUT)
+        await page.waitForTimeout(PAGE_KEYPRESS_TIMEOUT)
         newWinH = 0
     } 
     console.log(`set initHeight:      ${newWinH}`)
