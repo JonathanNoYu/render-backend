@@ -3,8 +3,8 @@ import { chromium } from "playwright";
 import * as cheerio from 'cheerio';
 import { PAGE_CONTENT_TIMEOUT, PAGE_KEYPRESS_TIMEOUT } from "../constants.js";
 
-async function webScrapePlaywright(url, scrollMax=4, prevData, page, pageMaxH=0) {
-    if (page === undefined) {
+async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo) {
+    if (!page) {
         const browser = await chromium.launch({ headless: true });
         const context = await browser.newContext({
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
@@ -36,22 +36,20 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page, pageMaxH=0)
     }
     var html = await page.content()
     var postData = removeWordCount(prevData)
-    if (prevData === undefined) {
-        var postData = processTrumblrPage(html)
-    }
-
+    if (!prevData) postData = processTrumblrPage(html)
     var scrollcount = 0;
+    // [initalHeight, # of init>=newHeight, # of reloads]
+    if (!heightInfo) heightInfo = [0, 0, 0];
     while(scrollcount < scrollMax) {
-        var initWinHeight = 0;
         await scrollABit(page)
         await scrollABit(page)
-        initWinHeight = await reloadAtBottom(page, initWinHeight)
+        heightInfo = await reloadAtBottom(page, heightInfo)
         await scrollABit(page)
-        initWinHeight = await reloadAtBottom(page, initWinHeight)
+        heightInfo = await reloadAtBottom(page, heightInfo)
         await scrollABit(page)
-        initWinHeight = await reloadAtBottom(page, initWinHeight)
+        heightInfo = await reloadAtBottom(page, heightInfo)
         await scrollABit(page)
-        initWinHeight = await reloadAtBottom(page, initWinHeight)
+        heightInfo = await reloadAtBottom(page, heightInfo)
         html = await page.content()
         var data = processTrumblrPage(html)
         postData = [...postData, ...data]
@@ -67,23 +65,30 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page, pageMaxH=0)
     if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'production') {
         postData = addWordCount(postData)
     }
-    return {postData, page, pageMaxH}
+    return {postData, page, heightInfo}
 }
 
-async function reloadAtBottom(page, initWinH) {
+async function reloadAtBottom(page, heightInfo) {
     let newWinH = await page.evaluate(() => document.getElementById("root").offsetHeight);
     await page.waitForTimeout(PAGE_KEYPRESS_TIMEOUT)
-    console.log(`init  scroll height: ${initWinH}`)
+    console.log(`init  scroll height: ${heightInfo[0]}`)
     console.log(`after scroll height: ${newWinH}`)
-    if (initWinH >= newWinH) {
+    if (heightInfo[0] >= newWinH) {
+        heightInfo[1] += 1
+        await page.waitForTimeout(PAGE_KEYPRESS_TIMEOUT)
+    } 
+    if (heightInfo[1] >= 2) {
         console.log(`reload page`)
         await page.reload()
         await page.waitForTimeout(PAGE_KEYPRESS_TIMEOUT)
+        heightInfo[1] = 0
+        heightInfo[2] += 1
         newWinH = 0
-    } 
-    console.log(`set initHeight:      ${newWinH}`)
+    }
+    heightInfo[0] = newWinH
+    console.log(`set initHeight:      ${heightInfo[0]}`)
     console.log(`____________________________________________________`)
-    return newWinH
+    return heightInfo
 }
 
 async function scrollABit(page) {

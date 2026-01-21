@@ -11,12 +11,17 @@ async function webScrape(username) {
     if (contentSoFar[username]) {
         const prevPage = contentSoFar[username][0]
         const prevData = contentSoFar[username][1]
-        const prevPageMaxH = contentSoFar[username][1]
-        var {postData, page, pageMaxH} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`, scrollNum, prevData, prevPage, prevPageMaxH)
+        const prevheightInfo = contentSoFar[username][1]
+        var {postData, page, heightInfo} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`, scrollNum, prevData, prevPage, prevheightInfo)
     } else {
-        var {postData, page, pageMaxH} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`, firstScroll)
+        var {postData, page, heightInfo} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`, firstScroll)
+        if (heightInfo[2] >= 3) {
+            heightInfo = [0,0,0]
+            page.close()
+            page = undefined
+        }
     }
-    contentSoFar[username] = [page, postData, pageMaxH]
+    contentSoFar[username] = [page, postData, heightInfo]
     return contentSoFar
 }
 
