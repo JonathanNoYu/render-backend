@@ -1,8 +1,9 @@
 import { BASE_URL_TUMBLR } from "../constants.js";
 import { chromium } from "playwright";
 import * as cheerio from 'cheerio';
+import { PAGE_CONTENT_TIMEOUT, PAGE_KEYPRESS_TIMEOUT } from "../constants.js";
 
-async function webScrapePlaywright(url, scrollMax=4, prevData, page) {
+async function webScrapePlaywright(url, scrollMax=4, prevData, page, pageMaxH=0) {
     if (page === undefined) {
         const browser = await chromium.launch({ headless: true });
         const context = await browser.newContext({
@@ -34,16 +35,24 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page) {
         await page.goto(url, { waitUntil: 'domcontentloaded' });
     }
     var html = await page.content()
-    var postData = prevData
+    var postData = removeWordCount(prevData)
     if (prevData === undefined) {
         var postData = processTrumblrPage(html)
     }
+
     var scrollcount = 0;
     while(scrollcount < scrollMax) {
         await scrollABit(page)
+        var initWinHeight = await page.evaluate(() => document.getElementById("tumblr").offsetHeight);
+        console.log(`init height:  ${initWinHeight}`)
         await scrollABit(page)
+        initWinHeight = await reloadAtBottom(page, initWinHeight)
         await scrollABit(page)
+        initWinHeight = await reloadAtBottom(page, initWinHeight)
         await scrollABit(page)
+        initWinHeight = await reloadAtBottom(page, initWinHeight)
+        await scrollABit(page)
+        initWinHeight = await reloadAtBottom(page, initWinHeight)
         html = await page.content()
         var data = processTrumblrPage(html)
         postData = [...postData, ...data]
@@ -59,7 +68,23 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page) {
     if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'production') {
         postData = addWordCount(postData)
     }
-    return {postData, page}
+    return {postData, page, pageMaxH}
+}
+
+async function reloadAtBottom(page, initWinH) {
+    let newWinH = await page.evaluate(() => document.getElementById("tumblr").offsetHeight);
+    await page.waitForTimeout(PAGE_KEYPRESS_TIMEOUT)
+    console.log(`init  scroll height: ${initWinH}`)
+    console.log(`after scroll height: ${newWinH}`)
+    if (initWinH >= newWinH) {
+        console.log(`reload page`)
+        await page.reload()
+        await page.waitForTimeout(PAGE_CONTENT_TIMEOUT)
+        newWinH = 0
+    } 
+    console.log(`set initHeight:      ${newWinH}`)
+    console.log(`____________________________________________________`)
+    return newWinH
 }
 
 async function scrollABit(page) {
@@ -67,7 +92,7 @@ async function scrollABit(page) {
         await page.keyboard.press('End')
     } else {
         await page.keyboard.press('End')
-        await page.waitForTimeout(175)
+        await page.waitForTimeout(PAGE_KEYPRESS_TIMEOUT)
     }
 }
 
@@ -93,6 +118,19 @@ function consolidateOrRemove(arrOfObj) {
         }
     }
     return resArr
+}
+
+function removeWordCount(postData) {
+    if (postData) {
+        postData = postData.map((post, _i) => {
+        const wc = post["wordcount"]
+        for (let keys of Object.keys(wc)) {
+            wc[keys] = 0; 
+        }
+        return post
+    })
+    }
+    return postData
 }
 
 // Adding this so backend show the wordcount but only if ran not in prod.
