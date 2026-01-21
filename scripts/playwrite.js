@@ -56,6 +56,9 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page) {
     postData = consolidateOrRemove(postData)
     // fs.writeFile('postDataAfter2.txt', JSON.stringify(postData), err => {if (err) console.error(err)})
     console.log("postData length after consolidating:" + postData.length)
+    if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'production') {
+        postData = addWordCount(postData)
+    }
     return {postData, page}
 }
 
@@ -81,12 +84,6 @@ function consolidateOrRemove(arrOfObj) {
                     resObj["dates"] = [...resObj["dates"], ...obj["dates"].slice(1)]
                     resObj["bodys"] = [...resObj["bodys"], ...obj["bodys"]]
                     resObj["users"] = [...resObj["users"], ...obj["users"]]
-
-                    const objWC = obj["wordcount"]
-                    const resWC = resObj["wordcount"]
-                    for (const user of Object.keys(objWC)) {
-                        resWC[user] = resWC[user] + objWC[user] | objWC[user]
-                    }
                 }
                 notInArr = false;
             }
@@ -106,10 +103,11 @@ function addWordCount(postData) {
         const users = post["users"] 
         const newUsers = post["wordcount"]
         if (postBody.length < users.length) return post;
-        users.map((u, _i) =>{
-            let bodyCount = postBody[_i].split(" ").length
-            newUsers[u] = newUsers[u] + bodyCount | bodyCount
+        users.map((u, __i) =>{
+            let bodyCount = postBody[__i].split(" ").filter(word => word !== "").length
+            newUsers[u] = newUsers[u] ? newUsers[u] + bodyCount : bodyCount
         })
+        post["userCount"] = users.length
         return post
     })
     return postData
@@ -167,9 +165,6 @@ function processTrumblrPage(html) {
             })
         }
     })
-    if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'production') {
-        allPosts = addWordCount(allPosts)
-    }
     return allPosts
 }
 export default webScrapePlaywright

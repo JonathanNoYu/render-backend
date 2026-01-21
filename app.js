@@ -1,6 +1,7 @@
 import express from "express";
 import "dotenv/config";
 import webScarpeRoutes from "./webScrape/routes.js";
+import open from 'open';
 
 const app = express();
 
@@ -18,4 +19,6 @@ app.use((req, res, next) => {
 });
 
 webScarpeRoutes(app)
-app.listen(process.env.PORT || 4000);
+let port = process.env.PORT || 4000
+app.listen(port);
+open(`http://localhost:${port}/api/`)
