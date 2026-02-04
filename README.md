@@ -7,7 +7,7 @@ Full Data => http://localhost:4000/api/webScrape/tumblr/
 slim data => http://localhost:4000/api/
 
 # To run dev
-npm run start
+npm start
 
 # To run prod
-npm run prod
+npm prod
