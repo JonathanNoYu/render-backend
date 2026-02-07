@@ -6,8 +6,11 @@ Add the tumblr username to the end of the follow for:
 Full Data => http://localhost:4000/api/webScrape/tumblr/
 slim data => http://localhost:4000/api/
 
+# To run as user
+npm run start
+
 # To run dev
-npm start
+npm run dev
 
 # To run prod
 npm prod
