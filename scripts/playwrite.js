@@ -1,14 +1,18 @@
 import { BASE_URL_TUMBLR } from "../constants.js";
 import { chromium } from "playwright";
 import * as cheerio from 'cheerio';
-import { PAGE_CONTENT_TIMEOUT, PAGE_KEYPRESS_TIMEOUT } from "../constants.js";
+import { PAGE_KEYPRESS_TIMEOUT } from "../constants.js";
+
+function randomIntFromInterval(min, max) { // min and max included 
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
 
 async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo) {
     if (!page) {
         const browser = await chromium.launch({ headless: true });
         const context = await browser.newContext({
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            viewport: { width: 1366, height: 768 }
+            viewport: { width: randomIntFromInterval(1366, 1920), height: randomIntFromInterval(768, 1080)}
         })
         page = await context.newPage();
         page.on('close', data => {
@@ -108,9 +112,10 @@ function consolidateOrRemove(arrOfObj) {
         for (const resObj of resArr) {
             if (resObj["title"] === obj["title"]) {
                 // Check if a duplicate of this is not already in the loop add
-                if(!resObj["dates"].includes(obj["dates"][1])) {
+                if(!resObj["postInfo"].includes(obj["postInfo"][1])) {
                     resObj["links"] = [...resObj["links"], ...obj["links"].slice(1)]
                     resObj["dates"] = [...resObj["dates"], ...obj["dates"].slice(1)]
+                    resObj["postInfo"] = [...resObj["postInfo"], ...obj["postInfo"].slice(1)]
                     resObj["bodys"] = [...resObj["bodys"], ...obj["bodys"]]
                     resObj["users"] = [...resObj["users"], ...obj["users"]]
                 }
@@ -171,6 +176,7 @@ function processTrumblrPage(html) {
                 var users = []
                 const postBody = []
                 const postDates = []
+                const jsDates = []
                 const postLinks = []
                 const dates = $(el).find('.l4Qpd')
                 const usersInPost = $(el).find(".BSUG4")  
@@ -195,7 +201,10 @@ function processTrumblrPage(html) {
                     }
                 })
                 dates.each((___i, datesEl) => { // posted Dates
-                    postDates.push($(datesEl).attr('aria-label'))
+                    let dateInfo = $(datesEl).attr('aria-label')
+                    postDates.push(dateInfo)
+                    let removedOrdinals = dateInfo.replace(/(\d+)(?:st|nd|rd|th)\b/, "$1")
+                    jsDates.push(new Date(Date.parse(removedOrdinals)))
                 })
                 links.each((___i, linksEl) => { // links for each post
                     postLinks.push(BASE_URL_TUMBLR + $(linksEl).attr('href'))
@@ -203,7 +212,7 @@ function processTrumblrPage(html) {
                 if (author === "" && users.length > 0) author = users.shift()
                 if (postLinks && postLinks.length > 0) id = postLinks[0].replace(/\D/g, "")
                 allPosts.push({id:id, title:titleInfo[0], wordcount:{}, subtitle: titleInfo[1], author:author, 
-                                dates:postDates, links:postLinks, users:users, bodys:postBody})
+                                postInfo:postDates, dates:jsDates, links:postLinks, users:users, bodys:postBody})
             })
         }
     })

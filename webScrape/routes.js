@@ -16,9 +16,8 @@ function reportHtmlHeader(req, username) {
 }
 
 async function webScrape(username) {
-    var postData = readJson(username)
-    var page;
-    if (contentSoFar[username]) {
+    var postData, page;
+    if (contentSoFar[username] && contentSoFar[username][1]) {
         const prevPage = contentSoFar[username][0]
         const prevData = contentSoFar[username][1]
         const prevheightInfo = contentSoFar[username][2]
@@ -29,6 +28,7 @@ async function webScrape(username) {
             page = undefined
         }
     } else {
+        postData = readJson(username)
         var {postData, page, heightInfo} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`, firstScroll)
     }
     contentSoFar[username] = [page, postData, heightInfo]

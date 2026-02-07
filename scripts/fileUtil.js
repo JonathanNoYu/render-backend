@@ -4,6 +4,9 @@ import * as fs from 'node:fs';
 function writeJson(pathAndfileName, content) {
     let fullPath = RES_PATH + pathAndfileName + '.json'
     try {
+        if (!fs.existsSync(RES_PATH)){
+            fs.mkdirSync(RES_PATH);
+        }
         fs.writeFileSync(fullPath, JSON.stringify(content, null, '\t'), 'utf8');
         console.log(`Wrote to ${fullPath}`);
     } catch (error) {
@@ -21,7 +24,6 @@ function readJson(pathAndfileName) {
         }
     } catch (error) {
         console.log(`An error in reading ${fullPath}`, error)
-        return error
     }
     return undefined
 }
