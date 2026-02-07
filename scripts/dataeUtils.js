@@ -28,7 +28,7 @@ export function weekdayToDate(weekday) {
     daysOfWeek.forEach((day, index) => {
         if (weekday.includes(day)) otherWeekDayNum = index
     })
-    let subtractByDays = (7 - otherWeekDayNum + thisWeekdayNum) % 7 
+    let subtractByDays = (7 - otherWeekDayNum + thisWeekdayNum - 1) % 7 
     let pastDate = new Date(Date.now())
     let dateString;
     if (otherWeekDayNum != undefined) {
@@ -38,37 +38,14 @@ export function weekdayToDate(weekday) {
         dateString = weekday.replace("–", "– " + pastDate.toLocaleDateString("en-US", options))
     }
     pastDate = new Date(Date.parse(dateString))
+    console.log(pastDate.toLocaleTimeString())
     return [pastDate, dateString]
-    // 0  1  2  3  4  5  6  0 
-    // M  T  W TH  F  SA SU M  
-    // 0  6  5  4  3  2  1  0
-    // 7 - dayOfOtherWeek +  thisWeekDayNum
-    
-    // 1  2  3  4  5  6  0  1  
-    // T  W  TH F  SA SU M  T
-    // 0  6  5  4  3  2  1  0
-    // 7 - dayOfOtherWeek +  thisWeekDayNum
-
-    // 2  3  4  5  6  0  1  2  
-    // W  TH F  SA SU M  T  W
-    // 0  6  5  4  3  2  1  0
-    // 7 - dayOfOtherWeek + thisWeekDayNum
-    // 7 - 3 + 2 = 6
-    // 7 - 4 + 2 = 5
-    // 7 - 5 + 2 = 4
-    // 7 - 6 + 2 = 3
-    // 7 - 0 + 2 = 9 - 7 = 2
-    // 7 - 1 + 2 = 8 - 7 = 1
-    // 7 - 2 + 2 = 7 - 7 = 0 mod
 }
-// console.log(weekdayToDate("Posted by princeofopenness – Monday 7:41 PM"))
-// console.log(new Date(Date.parse((weekdayToDate("Posted by princeofopenness – Monday 7:41 PM")[1]))))
-
-// console.log(weekdayToDate("Reblogged by stormofembla – 10:58 AM"))
-// console.log(new Date(Date.parse((weekdayToDate("Reblogged by stormofembla – 10:58 AM")[1]))))
 
 /**
  * 
+ * Checks if the year in the date is in the postDateString, if not it will assume it is this year
+ * and inject this year into the dateString and returns the newDate and the new dateString.
  * 
  * "Reblogged by stormofembla – Saturday, February 7, 2026 10:19 AM",
  * "Reblogged by sacrificialspear – January 17th, 9:04 PM",
@@ -86,5 +63,3 @@ export function checkYearOrAddYear(date, postDateString) {
     }
     return [date, postDateString]
 }
-
-//console.log(checkYearOrAddYear(new Date("2001-01-18T02:04:00.000Z"), "Reblogged by sacrificialspear – January 17, 9:04 PM"))
