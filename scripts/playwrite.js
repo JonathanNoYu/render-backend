@@ -2,9 +2,14 @@ import { BASE_URL_TUMBLR } from "../constants.js";
 import { chromium } from "playwright";
 import * as cheerio from 'cheerio';
 import { PAGE_KEYPRESS_TIMEOUT } from "../constants.js";
+import { weekdayToDate, checkYearOrAddYear } from "./dataeUtils.js";
 
 function randomIntFromInterval(min, max) { // min and max included 
   return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+function sortPostData(postData) {
+    postData.sort((a, b) => Math.max(a["dates"]) - Math.max(b["dates"]))
 }
 
 async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo) {
@@ -126,6 +131,7 @@ function consolidateOrRemove(arrOfObj) {
             resArr.push(obj)
         }
     }
+    sortPostData(resArr)
     return resArr
 }
 
@@ -201,10 +207,17 @@ function processTrumblrPage(html) {
                     }
                 })
                 dates.each((___i, datesEl) => { // posted Dates
-                    let dateInfo = $(datesEl).attr('aria-label')
-                    postDates.push(dateInfo)
+                    var dateInfo = $(datesEl).attr('aria-label')
                     let removedOrdinals = dateInfo.replace(/(\d+)(?:st|nd|rd|th)\b/, "$1")
-                    jsDates.push(new Date(Date.parse(removedOrdinals)))
+                    var date = new Date(Date.parse(removedOrdinals))
+                    if (isNaN(date)) {
+                        var [date, dateInfo] = weekdayToDate(removedOrdinals)
+                    }
+                    if (!dateInfo.match(/\b\d{4}\b/)) {
+                        var [date, dateInfo] = checkYearOrAddYear(date, removedOrdinals)
+                    }
+                    postDates.push(dateInfo)
+                    jsDates.push(date)
                 })
                 links.each((___i, linksEl) => { // links for each post
                     postLinks.push(BASE_URL_TUMBLR + $(linksEl).attr('href'))
