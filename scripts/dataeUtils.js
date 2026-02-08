@@ -38,7 +38,6 @@ export function weekdayToDate(weekday) {
         dateString = weekday.replace("–", "– " + pastDate.toLocaleDateString("en-US", options))
     }
     pastDate = new Date(Date.parse(dateString))
-    console.log(pastDate.toLocaleTimeString())
     return [pastDate, dateString]
 }
 

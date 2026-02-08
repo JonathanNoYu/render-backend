@@ -29,7 +29,7 @@ async function webScrape(username) {
         }
     } else {
         postData = readJson(username)
-        var {postData, page, heightInfo} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`, firstScroll)
+        var {postData, page, heightInfo} = await webScrapePlaywright(`${BASE_URL_TUMBLR}/${username}`, firstScroll, postData)
     }
     contentSoFar[username] = [page, postData, heightInfo]
     writeJson(username, postData)

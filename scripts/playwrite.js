@@ -3,49 +3,74 @@ import { chromium } from "playwright";
 import * as cheerio from 'cheerio';
 import { PAGE_KEYPRESS_TIMEOUT } from "../constants.js";
 import { weekdayToDate, checkYearOrAddYear } from "./dataeUtils.js";
+import { readJson, writeJson } from "./fileUtil.js";
 
 function randomIntFromInterval(min, max) { // min and max included 
   return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
 function sortPostData(postData) {
-    postData.sort((a, b) => Math.max(a["dates"]) - Math.max(b["dates"]))
+    return postData.sort((a, b) => {
+        let aDates = a["dates"]
+        let bDates = b["dates"]
+        let maxFromA = aDates.sort()[0]
+        let maxFromB = bDates.sort()[0]
+        if (maxFromA && maxFromB) return maxFromA.localeCompare(maxFromB)
+        if (maxFromA) return 1
+        if (maxFromB) return -1
+        return -1
+    })
+}
+// let balls = sortPostData(readJson("corvusi"))
+// writeJson("erleaof", balls)
+
+async function createPage(url) {
+    const browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        viewport: { width: randomIntFromInterval(1366, 1920), height: randomIntFromInterval(768, 1080)}
+    })
+    var page = await context.newPage();
+    page.on('close', data => {
+        browser.close()
+    });
+    await page.addStyleTag({ content: `html { scroll-behavior: initial !important; } 
+                                    *,
+                                    *::before,
+                                    *::after {
+                                    transition: none !important;
+                                    animation: none !important;
+                                    }`});
+    // Intercept all requests
+    await page.route('**/*', (route) => {
+        const type = route.request().resourceType();
+        // Block heavy, non-essential assets
+        if (type === 'image' || type === 'font' || type === 'media') {
+            return route.abort();
+        }
+        // Allow everything else (HTML, JS, XHR, fetch, etc.)
+        return route.continue();
+        });
+    console.log("Going to website " + url)
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    return page
 }
 
 async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo) {
-    if (!page) {
-        const browser = await chromium.launch({ headless: true });
-        const context = await browser.newContext({
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-            viewport: { width: randomIntFromInterval(1366, 1920), height: randomIntFromInterval(768, 1080)}
-        })
-        page = await context.newPage();
-        page.on('close', data => {
-            browser.close()
-        });
-        await page.addStyleTag({ content: `html { scroll-behavior: initial !important; } 
-                                        *,
-                                        *::before,
-                                        *::after {
-                                        transition: none !important;
-                                        animation: none !important;
-                                        }`});
-        // Intercept all requests
-        await page.route('**/*', (route) => {
-            const type = route.request().resourceType();
-            // Block heavy, non-essential assets
-            if (type === 'image' || type === 'font' || type === 'media') {
-                return route.abort();
-            }
-            // Allow everything else (HTML, JS, XHR, fetch, etc.)
-            return route.continue();
-            });
-        console.log("Going to website " + url)
-        await page.goto(url, { waitUntil: 'domcontentloaded' });
+    if (!page || heightInfo[2] >= 3) {
+        page = await createPage(url)
+        heightInfo = [0,0,0]
     }
-    var html = await page.content()
+    var html
+    try {
+        html = await page.content()
+    } catch (err) {
+        page = await createPage(url)
+        html = await page.content()   
+    }
     var postData = removeWordCount(prevData)
     if (!prevData) postData = processTrumblrPage(html)
+    postData = sortPostData(postData)
     var scrollcount = 0;
     // [initalHeight, # of init>=newHeight, # of reloads]
     if (!heightInfo) heightInfo = [0, 0, 0];
@@ -110,7 +135,7 @@ async function scrollABit(page) {
 }
 
 function consolidateOrRemove(arrOfObj) {
-    const resArr = []
+    var resArr = []
     for (const obj of arrOfObj) {
         var notInArr = true
         // Check Array
@@ -131,7 +156,7 @@ function consolidateOrRemove(arrOfObj) {
             resArr.push(obj)
         }
     }
-    sortPostData(resArr)
+    resArr = sortPostData(resArr)
     return resArr
 }
 
@@ -173,7 +198,7 @@ function processTrumblrPage(html) {
     // Check p.F2bKK to check if a post is pinned. If it is ignore it.
     const pinned = allPostsOnPage.find(".F2bKK").length
     allPostsOnPage.each((_i, el) => {
-        if (_i > pinned) { 
+        if (_i >= pinned) { 
             const post = $(el).find(".Qb2zX") // all users + posts
             // const tags = $(el).find("div.mwjNz") // tags
             post.each((__i, el) => {
