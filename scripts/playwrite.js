@@ -3,7 +3,6 @@ import { chromium } from "playwright";
 import * as cheerio from 'cheerio';
 import { PAGE_KEYPRESS_TIMEOUT } from "../constants.js";
 import { weekdayToDate, checkYearOrAddYear } from "./dataeUtils.js";
-import { readJson, writeJson } from "./fileUtil.js";
 
 function randomIntFromInterval(min, max) { // min and max included 
   return Math.floor(Math.random() * (max - min + 1) + min);
@@ -13,16 +12,17 @@ function sortPostData(postData) {
     return postData.sort((a, b) => {
         let aDates = a["dates"]
         let bDates = b["dates"]
-        let maxFromA = aDates.sort()[0]
-        let maxFromB = bDates.sort()[0]
-        if (maxFromA && maxFromB) return maxFromA.localeCompare(maxFromB)
-        if (maxFromA) return 1
-        if (maxFromB) return -1
-        return -1
+        let maxFromA = aDates.sort()[aDates.length - 1]
+        let maxFromB = bDates.sort()[bDates.length - 1]
+        if (maxFromA && maxFromB) { 
+            let num = maxFromA.toString().localeCompare(maxFromB.toString())
+            return num * -1
+        }
+        if (maxFromA) return -1
+        if (maxFromB) return 1
+        return 0
     })
 }
-// let balls = sortPostData(readJson("corvusi"))
-// writeJson("erleaof", balls)
 
 async function createPage(url) {
     const browser = await chromium.launch({ headless: true });
@@ -70,7 +70,7 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo)
     }
     var postData = removeWordCount(prevData)
     if (!prevData) postData = processTrumblrPage(html)
-    postData = sortPostData(postData)
+    postData = postData
     var scrollcount = 0;
     // [initalHeight, # of init>=newHeight, # of reloads]
     if (!heightInfo) heightInfo = [0, 0, 0];
@@ -156,8 +156,7 @@ function consolidateOrRemove(arrOfObj) {
             resArr.push(obj)
         }
     }
-    resArr = sortPostData(resArr)
-    return resArr
+    return sortPostData(resArr)
 }
 
 function removeWordCount(postData) {
