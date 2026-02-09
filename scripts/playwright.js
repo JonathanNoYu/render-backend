@@ -126,6 +126,7 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo)
     // fs.writeFile('postDataBefore2.txt', JSON.stringify(postData), err => {if (err) console.error(err)})
     console.log("postData length before consolidating:" + postData.length)
     postData = consolidateOrRemove(postData)
+    postData = sortPostData(postData)
     // fs.writeFile('postDataAfter2.txt', JSON.stringify(postData), err => {if (err) console.error(err)})
     console.log("postData length after consolidating:" + postData.length)
     if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'production') {
@@ -210,7 +211,7 @@ function consolidateOrRemove(arrOfObj) {
             resArr.push(obj)
         }
     }
-    return sortPostData(resArr)
+    return resArr
 }
 
 /**
