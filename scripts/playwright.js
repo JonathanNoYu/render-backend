@@ -2,7 +2,7 @@ import { BASE_URL_TUMBLR } from "../constants.js";
 import { chromium } from "playwright";
 import * as cheerio from 'cheerio';
 import { PAGE_KEYPRESS_TIMEOUT } from "../constants.js";
-import { weekdayToDate, checkYearOrAddYear } from "./dataeUtils.js";
+import { weekdayToDate, checkYearOrAddYear, compareDates } from "./dataeUtils.js";
 
 /**
  * Given a min and max number returns a random integer inclusive of the min and max numbers.
@@ -11,7 +11,7 @@ import { weekdayToDate, checkYearOrAddYear } from "./dataeUtils.js";
  * @param {Number} max 
  * @returns Number between min and max (inclusive)
  */
-function randomIntFromInterval(min, max) { // min and max included 
+function randomIntFromInterval(min, max) {
   return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
@@ -26,12 +26,9 @@ function sortPostData(postData) {
     return postData.sort((a, b) => {
         let aDates = a["dates"]
         let bDates = b["dates"]
-        let maxFromA = aDates.sort()[aDates.length - 1]
-        let maxFromB = bDates.sort()[bDates.length - 1]
-        if (maxFromA && maxFromB) { 
-            let num = maxFromA.toString().localeCompare(maxFromB.toString())
-            return num * -1
-        }
+        let maxFromA = aDates.sort(compareDates)[0]
+        let maxFromB = bDates.sort(compareDates)[0]
+        if (maxFromA && maxFromB) return compareDates(maxFromA, maxFromB)
         if (maxFromA) return -1
         if (maxFromB) return 1
         return 0
@@ -102,7 +99,6 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo)
     }
     var postData = removeWordCount(prevData)
     if (!prevData) postData = processTumblrPage(html)
-    postData = postData
     var scrollcount = 0;
     // [initalHeight, # of init>=newHeight, # of reloads]
     if (!heightInfo) heightInfo = [0, 0, 0];
@@ -122,16 +118,9 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo)
         scrollcount++
         console.log(`Scrolling on ${url} scollcount:${scrollcount}`)
     }
-    // const fs = require('node:fs');
-    // fs.writeFile('postDataBefore2.txt', JSON.stringify(postData), err => {if (err) console.error(err)})
     console.log("postData length before consolidating:" + postData.length)
     postData = consolidateOrRemove(postData)
-    postData = sortPostData(postData)
-    // fs.writeFile('postDataAfter2.txt', JSON.stringify(postData), err => {if (err) console.error(err)})
     console.log("postData length after consolidating:" + postData.length)
-    if (!process.env.NODE_ENV || process.env.NODE_ENV !== 'production') {
-        postData = addWordCount(postData)
-    }
     return {postData, page, heightInfo}
 }
 
@@ -211,7 +200,8 @@ function consolidateOrRemove(arrOfObj) {
             resArr.push(obj)
         }
     }
-    return resArr
+    resArr = addWordCount(resArr)
+    return sortPostData(resArr)
 }
 
 /**

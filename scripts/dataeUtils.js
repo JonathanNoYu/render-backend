@@ -63,3 +63,18 @@ export function checkYearOrAddYear(date, postDateString) {
     }
     return [date, postDateString]
 }
+
+/**
+ * Compares two dates and returns 1 if aDate is eariler returns -1 if bdate is earilier and returns 0 if they are the same date
+ * 
+ * @param {Date} aDate 
+ * @param {Date} bDate 
+ * @returns Number (-1 | 0 | 1)
+ */
+export function compareDates(aDate, bDate) {
+    let a = Date.parse(aDate)
+    let b = Date.parse(bDate)
+    if (a > b) return -1
+    if (b > a) return 1
+    return 0
+ }
