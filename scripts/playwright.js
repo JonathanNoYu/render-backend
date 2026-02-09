@@ -4,10 +4,24 @@ import * as cheerio from 'cheerio';
 import { PAGE_KEYPRESS_TIMEOUT } from "../constants.js";
 import { weekdayToDate, checkYearOrAddYear } from "./dataeUtils.js";
 
+/**
+ * Given a min and max number returns a random integer inclusive of the min and max numbers.
+ * 
+ * @param {Number} min 
+ * @param {Number} max 
+ * @returns Number between min and max (inclusive)
+ */
 function randomIntFromInterval(min, max) { // min and max included 
   return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
+/**
+ * Sorts an Array of objects by the "dates" property. Assumes the order should be chronological with the most recent 
+ * object/post being the first in the array.
+ * 
+ * @param {Array<Object>} postData 
+ * @returns Array<Object> sorted version of the given array of objects using "dates" property.
+ */
 function sortPostData(postData) {
     return postData.sort((a, b) => {
         let aDates = a["dates"]
@@ -24,6 +38,12 @@ function sortPostData(postData) {
     })
 }
 
+/**
+ * Given a string url createse a playwright headless browser and returns a page at that url.
+ * 
+ * @param {String} url - string version of a url to get the playwright page of.
+ * @returns Playwright page object. 
+ */
 async function createPage(url) {
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({
@@ -56,6 +76,18 @@ async function createPage(url) {
     return page
 }
 
+/**
+ * Given a url returns an array of objects of tumblr posts, playwright page of the website and an array of height info 
+ * about current page height, number of same height when scrolled (resets to zero on reload) and number of reloads to the page 
+ * (reloads when # of same height when scrolled is >= 2)
+ * 
+ * @param {String} url 
+ * @param {Number} scrollMax 
+ * @param {Array<Object>} prevData 
+ * @param {Playwright page} page 
+ * @param {Array<Number>[3]} heightInfo 
+ * @returns {Array<Object>, Playwright page, Array<Number>[3]} {postData, page, heightInfo} 
+ */
 async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo) {
     if (!page || heightInfo[2] >= 3) {
         page = await createPage(url)
@@ -69,7 +101,7 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo)
         html = await page.content()   
     }
     var postData = removeWordCount(prevData)
-    if (!prevData) postData = processTrumblrPage(html)
+    if (!prevData) postData = processTumblrPage(html)
     postData = postData
     var scrollcount = 0;
     // [initalHeight, # of init>=newHeight, # of reloads]
@@ -85,7 +117,7 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo)
         await scrollABit(page)
         heightInfo = await reloadAtBottom(page, heightInfo)
         html = await page.content()
-        var data = processTrumblrPage(html)
+        var data = processTumblrPage(html)
         postData = [...postData, ...data]
         scrollcount++
         console.log(`Scrolling on ${url} scollcount:${scrollcount}`)
@@ -102,6 +134,16 @@ async function webScrapePlaywright(url, scrollMax=4, prevData, page, heightInfo)
     return {postData, page, heightInfo}
 }
 
+/**
+ * Given a Playwright page and an array of height info it will reload the page or update the current height (heightInfo[0])
+ * Will increment heightInfo[1] if current hieght and past height are the same
+ * Will increment heightInfo[2] if heightInfo[1] >= 2, reloads the page and sets heightInfo[0] to 0
+ * Console logs the inital, after and set heights also logs if the page reloads.
+ *  
+ * @param {Playwright page} page 
+ * @param {Array<Numbers>[3]} heightInfo 
+ * @returns Array<Numbers>[3] updated heightInfo.
+ */
 async function reloadAtBottom(page, heightInfo) {
     let newWinH = await page.evaluate(() => document.getElementById("root").offsetHeight);
     await page.waitForTimeout(PAGE_KEYPRESS_TIMEOUT)
@@ -125,6 +167,11 @@ async function reloadAtBottom(page, heightInfo) {
     return heightInfo
 }
 
+/**
+ * Given a Playwright page scrolls by using the "End" keyboard press
+ * 
+ * @param {Playwright page} page 
+ */
 async function scrollABit(page) {
     if (process.env.NODE_ENV && process.env.NODE_ENV === "production") {
         await page.keyboard.press('End')
@@ -134,6 +181,13 @@ async function scrollABit(page) {
     }
 }
 
+/**
+ * Given an Array of Objects (assuming postData from processTumblrPage(html)) consolidates or removes duplicates of the same object
+ * based on the title property of each object. Will return a sorted version of the consolidated Array
+ * 
+ * @param {Array<Object>} arrOfObj 
+ * @returns Array<Object> - each object is unique and has the combined data of any post with the same title.
+ */
 function consolidateOrRemove(arrOfObj) {
     var resArr = []
     for (const obj of arrOfObj) {
@@ -159,6 +213,12 @@ function consolidateOrRemove(arrOfObj) {
     return sortPostData(resArr)
 }
 
+/**
+ * Removes the property "wordcount" from an array of objects
+ * 
+ * @param {Array<Object>} postData 
+ * @returns Array<Object> postData without the property "wordcount"
+ */
 function removeWordCount(postData) {
     if (postData) {
         postData = postData.map((post, _i) => {
@@ -172,8 +232,13 @@ function removeWordCount(postData) {
     return postData
 }
 
-// Adding this so backend show the wordcount but only if ran not in prod.
-// So the free tier render does not use more ram than it needs to.
+/**
+ * Adding this so backend show the wordcount but only if ran not in prod.
+ * So the free tier render does not use more ram than it needs to.
+ * 
+ * @param {Array<Object>} postData - array of objects that includes all the post data from a tumblr post (from processTumlbrPage)
+ * @returns Array<Object> postData with word count and userCount (# of reposts from each user) added as an property postData["wordcount"] & postData["userCount"] 
+ */
 function addWordCount(postData) {
     postData = postData.map((post, _i) => {
         const postBody = post["bodys"]
@@ -190,7 +255,14 @@ function addWordCount(postData) {
     return postData
 }
 
-function processTrumblrPage(html) {
+/**
+ * Processes a tumblr page based on The Officer Academy FE rp group. Takes in a string of html to process
+ * 
+ * @param {String} html - html from a tumblr page i.e. https://www.tumblr.com/<username here>
+ * @returns Array<Object> - an Array of posts with each entry being an object with properties include
+ *  id, title, wordcount, subtitle, author, postInfo, dates, links, users, body (as of 2/9/2026)
+ */
+function processTumblrPage(html) {
     const $ = cheerio.load(html);
     var allPosts = []
     const allPostsOnPage = $('article.FtjPK'); // article.FtjPK r0etU
@@ -256,5 +328,4 @@ function processTrumblrPage(html) {
     return allPosts
 }
 export default webScrapePlaywright
-const bruno = 'https://www.tumblr.com/stormofembla'
 

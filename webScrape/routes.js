@@ -1,4 +1,4 @@
-import webScrapePlaywright from "../scripts/playwrite.js";
+import webScrapePlaywright from "../scripts/playwright.js";
 import { readJson, writeJson } from "../scripts/fileUtil.js";
 import { BASE_URL_TUMBLR } from "../constants.js";
 

@@ -5,6 +5,7 @@ Date.prototype.subtractDays = function (d) {
     return this;
 }
 
+// options to produce "<Weekday> <Month> <Date>, <YEAR>" when used on <date>.toLocaleDateString
 const options = {
   weekday: "long",
   year: "numeric",
