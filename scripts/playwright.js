@@ -228,7 +228,7 @@ function removeWordCount(postData) {
  * So the free tier render does not use more ram than it needs to.
  * 
  * @param {Array<Object>} postData - array of objects that includes all the post data from a tumblr post (from processTumlbrPage)
- * @returns Array<Object> postData with word count and userCount (# of reposts from each user) added as an property postData["wordcount"] & postData["userCount"] 
+ * @returns Array<Object> postData with word count added as an property postData["wordcount"]
  */
 function addWordCount(postData) {
     postData = postData.map((post, _i) => {
@@ -240,7 +240,6 @@ function addWordCount(postData) {
             let bodyCount = postBody[__i].split(" ").filter(word => word !== "").length
             newUsers[u] = newUsers[u] ? newUsers[u] + bodyCount : bodyCount
         })
-        post["userCount"] = users.length
         return post
     })
     return postData
